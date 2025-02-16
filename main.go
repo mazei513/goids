@@ -36,7 +36,24 @@ func (g *Game) Update() error {
 		centerY /= float64(len(g.boids)) - 1
 		v1x, v1y := (centerX-b.x)/100, (centerY-b.y)/100
 
-		b.dx, b.dy = b.dx+v1x, b.dy+v1y
+		// Rule 2
+		v2x, v2y := 0.0, 0.0
+		for j, b2 := range g.boids {
+			if i == j {
+				continue
+			}
+			dx, dy := b.x-b2.x, b.y-b2.y
+			if math.Sqrt(dx*dx+dy*dy) >= 16 {
+				continue
+			}
+			v2x -= dx
+			v2y -= dy
+		}
+
+		// Update vector
+		b.dx += v1x + v2x
+		b.dy += v1y + v2y
+		fmt.Println(v1x, v1y, v2x, v2y, b.dx, b.dy)
 
 		// Update movement
 		b.x += b.dx
@@ -52,12 +69,15 @@ func (g *Game) Update() error {
 			b.y += b.dy * 2
 		}
 	}
+	fmt.Println()
 	return nil
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
-	for _, b := range g.boids {
+	for i, b := range g.boids {
 		opts := &ebiten.DrawImageOptions{}
+		c := float32(i) / float32(len(g.boids))
+		opts.ColorScale.Scale(1, c, 1, 1)
 		opts.GeoM.Translate(-float64(boidImage.Bounds().Dx())/2, -float64(boidImage.Bounds().Dy())/2)
 		opts.GeoM.Rotate(math.Atan2(b.dy, b.dx) + math.Pi/2)
 		opts.GeoM.Translate(b.x, b.y)
