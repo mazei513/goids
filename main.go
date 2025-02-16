@@ -22,16 +22,34 @@ type Game struct {
 }
 
 func (g *Game) Update() error {
-	for _, b := range g.boids {
-		b.x += b.dx * maxSpeed
+	for i, b := range g.boids {
+		// Rule 1
+		centerX, centerY := 0.0, 0.0
+		for j, b2 := range g.boids {
+			if i == j {
+				continue
+			}
+			centerX += b2.x
+			centerY += b2.y
+		}
+		centerX /= float64(len(g.boids)) - 1
+		centerY /= float64(len(g.boids)) - 1
+		v1x, v1y := (centerX-b.x)/100, (centerY-b.y)/100
+
+		b.dx, b.dy = b.dx+v1x, b.dy+v1y
+
+		// Update movement
+		b.x += b.dx
+		b.y += b.dy
+
+		// Bounce off corner
 		if b.x < 0 || b.x > screenSize {
 			b.dx = -b.dx
-			b.x += b.dx * maxSpeed * 2
+			b.x += b.dx * 2
 		}
-		b.y += b.dy * maxSpeed
 		if b.y < 0 || b.y > screenSize {
 			b.dy = -b.dy
-			b.y += b.dy * maxSpeed * 2
+			b.y += b.dy * 2
 		}
 	}
 	return nil
