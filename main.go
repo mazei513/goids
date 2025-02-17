@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	screenSize = 4000
+	screenSize = 6000
 	maxSpeed   = 50
 	nBoids     = 6500
 	vision     = 60
