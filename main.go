@@ -2,29 +2,31 @@ package main
 
 import (
 	"image"
+	_ "image/png"
 	"math"
 	"math/rand/v2"
 	"os"
 	"sync"
 
 	"github.com/hajimehoshi/ebiten/v2"
-	_ "github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
 
 const (
 	screenSize = 4000
-	screenHalf = screenSize / 2.0
 	maxSpeed   = 50
 	nBoids     = 6500
 	vision     = 60
-	repulse    = 30.0
+	repulse    = 20.0
 	attract    = 200.0
-	follow     = 8.0
+	follow     = 16.0
 	nPar       = 16
 )
 
 type Boid struct{ x, y, dx, dy float64 }
-type Game struct{ boids []*Boid }
+type Game struct {
+	boids  []*Boid
+	colors []ebiten.ColorScale
+}
 
 func mag(x, y float64) float64 { return math.Sqrt(x*x + y*y) }
 
@@ -88,8 +90,8 @@ func (g *Game) Update() error {
 				}
 
 				// Store vector
-				outX[i] = v1x + v2x/70 + v3x
-				outY[i] = v1y + v2y/70 + v3y
+				outX[i] = v1x + v2x/30 + v3x
+				outY[i] = v1y + v2y/30 + v3y
 			}
 			wg.Done()
 		}(g.boids[start:end], dxs[start:end], dys[start:end], start)
@@ -117,11 +119,11 @@ func (g *Game) Update() error {
 		b.y += b.dy
 
 		// Bounce off corner
-		if b.x < -screenHalf || b.x > screenHalf {
+		if b.x < 0 || b.x > screenSize {
 			b.dx = -b.dx
 			b.x += b.dx * 2
 		}
-		if b.y < -screenHalf || b.y > screenHalf {
+		if b.y < 0 || b.y > screenSize {
 			b.dy = -b.dy
 			b.y += b.dy * 2
 		}
@@ -135,13 +137,11 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	offset := -float64(boidImage.Bounds().Dx()) / 2
 	const halfPi = math.Pi / 2
 	for i, b := range g.boids {
-		c := float32(i) / nBoids
-		opts.ColorScale.Scale(1, c, 1, 1)
+		opts.ColorScale = g.colors[i]
 		opts.GeoM.Translate(offset, offset)
 		opts.GeoM.Rotate(math.Atan2(b.dy, b.dx) + halfPi)
-		opts.GeoM.Translate(b.x+screenHalf, b.y+screenHalf)
+		opts.GeoM.Translate(b.x, b.y)
 		screen.DrawImage(boidImage, opts)
-		opts.ColorScale.Reset()
 		opts.GeoM.Reset()
 	}
 	// TODO add marker when TPS <59.9
@@ -167,15 +167,17 @@ func main() {
 	ebiten.SetWindowSize(1000, 1000)
 	ebiten.SetWindowTitle("goids")
 	boids := make([]*Boid, nBoids)
+	colors := make([]ebiten.ColorScale, nBoids)
 	for i := range boids {
 		dx := rand.Float64() - 0.5
 		dy := rand.Float64() - 0.5
 		dMag := mag(dx, dy)
 		dx = (dx / dMag) * maxSpeed
 		dy = (dy / dMag) * maxSpeed
-		boids[i] = &Boid{(rand.Float64() - 0.5) * screenSize, (rand.Float64() - 0.5) * screenSize, dx, dy}
+		boids[i] = &Boid{(rand.Float64()) * screenSize, (rand.Float64()) * screenSize, dx, dy}
+		colors[i].Scale(rand.Float32(), rand.Float32(), rand.Float32(), 1)
 	}
-	err = ebiten.RunGame(&Game{boids})
+	err = ebiten.RunGame(&Game{boids, colors})
 	if err != nil {
 		panic(err)
 	}
