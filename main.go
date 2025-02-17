@@ -11,15 +11,17 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
 
-const screenSize = 2000
+const screenSize = 4000
 const maxSpeed = 20
-const nBoids = 1000
+const nBoids = 2000
+const repulse = 10.0
+const attract = 400.0
+const follow = 8.0
 
 type Boid struct{ x, y, dx, dy float64 }
 
 type Game struct {
-	boids            []*Boid
-	repulse, attract float64
+	boids []*Boid
 }
 
 func mag(dx, dy float64) float64 {
@@ -27,40 +29,28 @@ func mag(dx, dy float64) float64 {
 }
 
 func (g *Game) Update() error {
-	// Input handling
-	if ebiten.IsKeyPressed(ebiten.KeyArrowLeft) {
-		g.attract -= 1
-	} else if ebiten.IsKeyPressed(ebiten.KeyArrowRight) {
-		g.attract += 1
-	}
-
-	if ebiten.IsKeyPressed(ebiten.KeyArrowUp) {
-		g.repulse -= 1
-	} else if ebiten.IsKeyPressed(ebiten.KeyDown) {
-		g.repulse += 1
-	}
-
-	// if !inpututil.IsKeyJustPressed(ebiten.KeySpace) {
-	// 	return nil
-	// }
-
 	// Boid update
 	for i, b := range g.boids {
 		v1x, v1y := 0.0, 0.0
 		v2x, v2y := 0.0, 0.0
 		v3x, v3y := 0.0, 0.0
+		n := 0.0
 		for j, b2 := range g.boids {
 			dx, dy := b2.x-b.x, b2.y-b.y
-			dMag := mag(dx, dy)
-			if i == j || dMag > 100 {
+			if i == j {
 				continue
 			}
+			dMag := mag(dx, dy)
+			if dMag > 200 {
+				continue
+			}
+			n += 1
 			// Rule 1
 			v1x += b2.x
 			v1y += b2.y
 
 			// Rule 2
-			if dMag < g.repulse {
+			if dMag < repulse {
 				v2x -= dx
 				v2y -= dy
 			}
@@ -70,16 +60,20 @@ func (g *Game) Update() error {
 			v3y += b2.dy
 		}
 
-		// Rule 1
-		v1x /= nBoids - 1
-		v1y /= nBoids - 1
-		v1x, v1y = (v1x-b.x)/g.attract, (v1y-b.y)/g.attract
+		if n == 0 {
+			v1x, v1y, v3x, v3y = 0, 0, 0, 0
+		} else {
+			// Rule 1
+			v1x /= n
+			v1y /= n
+			v1x, v1y = (v1x-b.x)/attract, (v1y-b.y)/attract
 
-		// Rule 3
-		v3x /= nBoids - 1
-		v3y /= nBoids - 1
-		v3x = (v3x - b.dx) / 16
-		v3y = (v3y - b.dy) / 16
+			// Rule 3
+			v3x /= n
+			v3y /= n
+			v3x = (v3x - b.dx) / follow
+			v3y = (v3y - b.dy) / follow
+		}
 
 		// Update vector
 		b.dx += v1x + v2x + v3x
@@ -120,7 +114,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		opts.GeoM.Translate(b.x+screenSize/2, b.y+screenSize/2)
 		screen.DrawImage(boidImage, opts)
 	}
-	ebitenutil.DebugPrint(screen, fmt.Sprintf("FPS: %f, TPS: %f\nrepulse: %f, attract: %f", ebiten.ActualFPS(), ebiten.ActualTPS(), g.repulse, g.attract))
+	ebitenutil.DebugPrint(screen, fmt.Sprintf("FPS: %f, TPS: %f", ebiten.ActualFPS(), ebiten.ActualTPS()))
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
@@ -151,7 +145,7 @@ func main() {
 		dy = (dy / dMag) * maxSpeed
 		boids[i] = &Boid{(rand.Float64() - 0.5) * screenSize, (rand.Float64() - 0.5) * screenSize, dx, dy}
 	}
-	err = ebiten.RunGame(&Game{boids: boids, repulse: 20.0, attract: 1000.0})
+	err = ebiten.RunGame(&Game{boids: boids})
 	if err != nil {
 		panic(err)
 	}
