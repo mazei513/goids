@@ -29,7 +29,7 @@ type Vec struct{ x, y float64 }
 type Boid struct{ x, y, dx, dy float64 }
 type Game struct {
 	vs     []Vec
-	boids  []*Boid
+	boids  []Boid
 	colors []ebiten.ColorScale
 }
 
@@ -79,6 +79,7 @@ func (g *Game) Update() error {
 			b.dy = -b.dy
 			b.y += b.dy * 2
 		}
+		g.boids[i] = b
 	}
 
 	return nil
@@ -118,7 +119,7 @@ func main() {
 
 	ebiten.SetWindowSize(windowSize, windowSize)
 	ebiten.SetWindowTitle("goids")
-	boids := make([]*Boid, nBoids)
+	boids := make([]Boid, nBoids)
 	colors := make([]ebiten.ColorScale, nBoids)
 	for i := range boids {
 		dx := rand.Float64() - 0.5
@@ -126,7 +127,7 @@ func main() {
 		dMag := mag(dx, dy)
 		dx = (dx / dMag) * minSpeed
 		dy = (dy / dMag) * minSpeed
-		boids[i] = &Boid{(rand.Float64()) * screenSize, (rand.Float64()) * screenSize, dx, dy}
+		boids[i] = Boid{(rand.Float64()) * screenSize, (rand.Float64()) * screenSize, dx, dy}
 		colors[i].Scale(rand.Float32(), rand.Float32(), rand.Float32(), 1)
 	}
 	err = ebiten.RunGame(&Game{make([]Vec, nBoids), boids, colors})
@@ -135,7 +136,7 @@ func main() {
 	}
 }
 
-func Calc(all, boids []*Boid, out []Vec, offset int) {
+func Calc(all, boids []Boid, out []Vec, offset int) {
 	for i, b := range boids {
 		v1x, v1y := 0.0, 0.0
 		v2x, v2y := 0.0, 0.0
