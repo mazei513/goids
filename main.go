@@ -27,6 +27,8 @@ const (
 
 type Vec struct{ x, y float64 }
 type Boid struct{ x, y, dx, dy float64 }
+type Vec32 struct{ x, y float32 }
+type Boid32 struct{ x, y, dx, dy float32 }
 type Game struct {
 	vs     []Vec
 	boids  []Boid
@@ -157,6 +159,58 @@ func Calc(all, boids []Boid, out []Vec, offset int) {
 			if dMag < repulseVision {
 				v2x -= dx
 				v2y -= dy
+			}
+
+			// Rule 3
+			v3x += b2.dx
+			v3y += b2.dy
+
+			n += 1
+		}
+
+		if n == 0 {
+			v1x, v1y, v3x, v3y = 0, 0, 0, 0
+		} else {
+			// Rule 1
+			v1x /= n
+			v1y /= n
+			v1x = (v1x - b.x) / attract
+			v1y = (v1y - b.y) / attract
+
+			// Rule 3
+			v3x /= n
+			v3y /= n
+			v3x = (v3x - b.dx) / follow
+			v3y = (v3y - b.dy) / follow
+		}
+
+		// Store vector
+		out[i].x = v1x + v2x/repulseDampen + v3x
+		out[i].y = v1y + v2y/repulseDampen + v3y
+	}
+}
+func Calc2(all, boids []Boid32, out []Vec32, offset int) {
+	ds := make([]Vec32, len(all))
+	mags := make([]float32, len(all))
+	for i, b := range boids {
+		v1x, v1y := float32(0.0), float32(0.0)
+		v2x, v2y := float32(0.0), float32(0.0)
+		v3x, v3y := float32(0.0), float32(0.0)
+		n := float32(0.0)
+		Mags32(b, all, ds, mags)
+		for j, b2 := range all {
+			if offset+i == j || mags[j] > vision {
+				continue
+			}
+
+			// Rule 1
+			v1x += b2.x
+			v1y += b2.y
+
+			// Rule 2
+			if mags[j] < repulseVision {
+				v2x -= ds[i].x
+				v2y -= ds[i].y
 			}
 
 			// Rule 3
