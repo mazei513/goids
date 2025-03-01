@@ -46,58 +46,7 @@ func (g *Game) Update() error {
 		if i == nPar-1 {
 			end = nBoids
 		}
-		go func(boids []*Boid, out []Vec, offset int) {
-			for i, b := range boids {
-				v1x, v1y := 0.0, 0.0
-				v2x, v2y := 0.0, 0.0
-				v3x, v3y := 0.0, 0.0
-				n := 0.0
-				for j, b2 := range g.boids {
-					dx, dy := b2.x-b.x, b2.y-b.y
-					dMag := mag(dx, dy)
-					if offset+i == j || dMag > vision {
-						continue
-					}
-
-					// Rule 1
-					v1x += b2.x
-					v1y += b2.y
-
-					// Rule 2
-					if dMag < repulseVision {
-						v2x -= dx
-						v2y -= dy
-					}
-
-					// Rule 3
-					v3x += b2.dx
-					v3y += b2.dy
-
-					n += 1
-				}
-
-				if n == 0 {
-					v1x, v1y, v3x, v3y = 0, 0, 0, 0
-				} else {
-					// Rule 1
-					v1x /= n
-					v1y /= n
-					v1x = (v1x - b.x) / attract
-					v1y = (v1y - b.y) / attract
-
-					// Rule 3
-					v3x /= n
-					v3y /= n
-					v3x = (v3x - b.dx) / follow
-					v3y = (v3y - b.dy) / follow
-				}
-
-				// Store vector
-				out[i].x = v1x + v2x/repulseDampen + v3x
-				out[i].y = v1y + v2y/repulseDampen + v3y
-			}
-			wg.Done()
-		}(g.boids[start:end], g.vs[start:end], start)
+		go func() { Calc(g.boids, g.boids[start:end], g.vs[start:end], start); wg.Done() }()
 	}
 
 	wg.Wait()
@@ -183,5 +132,57 @@ func main() {
 	err = ebiten.RunGame(&Game{make([]Vec, nBoids), boids, colors})
 	if err != nil {
 		panic(err)
+	}
+}
+
+func Calc(all, boids []*Boid, out []Vec, offset int) {
+	for i, b := range boids {
+		v1x, v1y := 0.0, 0.0
+		v2x, v2y := 0.0, 0.0
+		v3x, v3y := 0.0, 0.0
+		n := 0.0
+		for j, b2 := range all {
+			dx, dy := b2.x-b.x, b2.y-b.y
+			dMag := mag(dx, dy)
+			if offset+i == j || dMag > vision {
+				continue
+			}
+
+			// Rule 1
+			v1x += b2.x
+			v1y += b2.y
+
+			// Rule 2
+			if dMag < repulseVision {
+				v2x -= dx
+				v2y -= dy
+			}
+
+			// Rule 3
+			v3x += b2.dx
+			v3y += b2.dy
+
+			n += 1
+		}
+
+		if n == 0 {
+			v1x, v1y, v3x, v3y = 0, 0, 0, 0
+		} else {
+			// Rule 1
+			v1x /= n
+			v1y /= n
+			v1x = (v1x - b.x) / attract
+			v1y = (v1y - b.y) / attract
+
+			// Rule 3
+			v3x /= n
+			v3y /= n
+			v3x = (v3x - b.dx) / follow
+			v3y = (v3y - b.dy) / follow
+		}
+
+		// Store vector
+		out[i].x = v1x + v2x/repulseDampen + v3x
+		out[i].y = v1y + v2y/repulseDampen + v3y
 	}
 }
