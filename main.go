@@ -189,15 +189,17 @@ func Calc(all, boids []Boid, out []Vec, offset int) {
 		out[i].y = v1y + v2y/repulseDampen + v3y
 	}
 }
+
+var ds = make([]Vec32, nBoids)
+var mags = make([]float32, nBoids)
+
 func Calc2(all, boids []Boid32, out []Vec32, offset int) {
-	ds := make([]Vec32, len(all))
-	mags := make([]float32, len(all))
 	for i, b := range boids {
 		v1x, v1y := float32(0.0), float32(0.0)
 		v2x, v2y := float32(0.0), float32(0.0)
 		v3x, v3y := float32(0.0), float32(0.0)
 		n := float32(0.0)
-		Mags32(b, all, ds, mags)
+		Mags32(b, all, ds[offset:offset+len(boids)], mags[offset:offset+len(boids)])
 		for j, b2 := range all {
 			if offset+i == j || mags[j] > vision {
 				continue

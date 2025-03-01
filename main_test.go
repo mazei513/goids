@@ -6,8 +6,8 @@ import (
 )
 
 func BenchmarkCalc(b *testing.B) {
-	all := make([]Boid, 1000)
-	out := make([]Vec, 1000)
+	all := make([]Boid, nBoids)
+	out := make([]Vec, nBoids)
 	for i := range all {
 		all[i] = Boid{rand.Float64(), rand.Float64(), rand.Float64(), rand.Float64()}
 	}
@@ -17,8 +17,8 @@ func BenchmarkCalc(b *testing.B) {
 	}
 }
 func BenchmarkCalc2(b *testing.B) {
-	all := make([]Boid32, 1000)
-	out := make([]Vec32, 1000)
+	all := make([]Boid32, nBoids)
+	out := make([]Vec32, nBoids)
 	for i := range all {
 		all[i] = Boid32{rand.Float32(), rand.Float32(), rand.Float32(), rand.Float32()}
 	}
